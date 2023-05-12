@@ -1,83 +1,48 @@
 import { useState, useEffect } from 'react'
-import Card from 'react-bootstrap/Card'
-import axios from 'axios'
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
-import Container from 'react-bootstrap/Container'
+import { Card, Row, Col, Container, Button } from 'react-bootstrap'
+// import { bi-caret-left-fill } from 'react-bootstrap-icons'
 import Pokemon from './Types/interfaces'
-import PokeCard from './Components/PokeCard'
-import PokeDetails from './Components/PokeDetails'
-import Button from 'react-bootstrap/Button'
+import PokeCard from './components/PokeCard'
+import PokeDetails from './components/PokeDetails'
 import useWindowWidth from './Utils/winWidth'
 import './app.css'
 
+import { useAppDispatch, useAppSelector } from './app/hooks.ts'
+import { added } from './features/pokemons/pokemonSlice.ts'
+import { useGetPokemonOffsetQuery } from './features/apiSlice/apiSlice.ts'
+
 const App: React.FC = () => {
-  const [data, setData] = useState<Pokemon[]>([])
-  const [pokemonListUrl, setPokemonListUrl] = useState('')
   const [shown, setShown] = useState<number | null>(null)
   const [offset, setOffset] = useState(0)
   const windowWidth = useWindowWidth()
+  const { data, error, isLoading } = useGetPokemonOffsetQuery(offset, {
+    refetchOnMountOrArgChange: true,
+  })
+  const allPokemons = useAppSelector((state) => state.pokemonList.list)
+  const dispatch = useAppDispatch()
 
-  const handleLoading = () => {
-    setOffset((prevOffset) => prevOffset + 12)
-    setShown(null)
+  useEffect(() => {
+    if (!isLoading && data) {
+      dispatch(added(data))
+    }
+  }, [data, dispatch])
+
+  if (isLoading) {
+    // Відображаємо індикатор завантаження
+    return <div>Loading...</div>
   }
 
-  useEffect(() => {
-    const limit = 12
-    const baseUrl = 'https://pokeapi.co/api/v2/pokemon/'
-    const url = `${baseUrl}?offset=${offset}&limit=${limit}`
-    setPokemonListUrl(url)
-  }, [offset])
+  if (error) {
+    // Відображаємо повідомлення про помилку
+    return <div>Error: {error.message}</div>
+  }
 
-  useEffect(() => {
-    const getData = async () => {
-      if (!pokemonListUrl) {
-        return
-      }
-      try {
-        const res = await axios.get(pokemonListUrl)
-        const pokemonDataPromises = res.data.results.map(
-          async (pokemon: any) => {
-            const pokemonRes = await axios.get(pokemon.url)
-            return {
-              id: pokemonRes.data.id,
-              name: pokemonRes.data.name,
-              img: pokemonRes.data.sprites.front_default,
-              types: pokemonRes.data.types.map((type: any) => type.type.name),
-              weight: pokemonRes.data.weight,
-              HP: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'hp'
-              ).base_stat,
-              attack: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'attack'
-              ).base_stat,
-              defense: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'defense'
-              ).base_stat,
-              SPattack: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'special-attack'
-              ).base_stat,
-              SPdefense: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'special-defense'
-              ).base_stat,
-              speed: pokemonRes.data.stats.find(
-                (stat: any) => stat.stat.name === 'speed'
-              ).base_stat,
-              total_moves: pokemonRes.data.moves.length,
-            }
-          }
-        )
+  if (data) {
+    // Відображаємо дані
+    console.log(data)
+  }
 
-        const pokemonData = await Promise.all(pokemonDataPromises)
-        setData(pokemonData)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-    getData()
-  }, [pokemonListUrl])
-
+  /////////////////////////
   const handleClick = (id: number) => {
     setShown(id)
   }
@@ -139,10 +104,14 @@ const App: React.FC = () => {
           </Col>
         </Row>
         <Row>
-          <Col lg={6} md={12} sm={12}>
+          <Col lg={1} md={2} sm={2}></Col>
+          <Col lg={5} md={10} sm={10}>
             <Button
               variant="primary"
-              onClick={handleLoading}
+              onClick={() => {
+                setOffset((prevOffset) => prevOffset + 12)
+                setShown(null)
+              }}
               style={{ width: '100%', height: '4rem' }}
             >
               Load more
