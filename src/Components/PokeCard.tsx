@@ -10,10 +10,10 @@ const PokeCard: React.FC<{ pokemon: Pokemon; onClick: () => void }> = ({
   return (
     <Card key={id} onClick={onClick} className="my-2">
       <Card.Img variant="top" src={img} />
-      <Card.Body>
+      <Card.Body className="text-center">
         <Card.Title className="text-capitalize fw-bold">{name}</Card.Title>
         {types.map((type) => (
-          <Badge key={type} variant="primary" className="mr-2">
+          <Badge key={type} variant="primary" style={{ margin: '0.1rem' }}>
             {type}
           </Badge>
         ))}
